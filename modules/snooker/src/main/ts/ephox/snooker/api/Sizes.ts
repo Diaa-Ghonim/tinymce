@@ -1,9 +1,11 @@
 import { Arr, Fun, Option } from '@ephox/katamari';
+import { TableLookup } from '@ephox/snooker';
 import { Css, Element, Height, Width } from '@ephox/sugar';
 import { Warehouse } from '../model/Warehouse';
 import * as BarPositions from '../resize/BarPositions';
 import * as ColumnSizes from '../resize/ColumnSizes';
 import * as Redistribution from '../resize/Redistribution';
+import * as Sizes from '../resize/Sizes';
 import * as CellUtils from '../util/CellUtils';
 import { DetailExt, RowData } from './Structs';
 import { TableSize } from './TableSize';
@@ -62,6 +64,36 @@ const redistribute = function (table: Element, optWidth: Option<string>, optHeig
 
 };
 
+const convertToPercentageSizing = (table: Element, direction: BarPositions<ColInfo>, tableSize: TableSize) => {
+  const newWidth = Sizes.getPercentTableWidth(table);
+  redistribute(table, Option.some(newWidth), Option.none(), direction, tableSize);
+};
+
+const convertToPixelSizing = (table: Element, direction: BarPositions<ColInfo>, tableSize: TableSize) => {
+  const newWidth = Sizes.getPixelTableWidth(table);
+  redistribute(table, Option.some(newWidth), Option.none(), direction, tableSize);
+};
+
+const convertToNoneSizing = (table: Element) => {
+  Css.remove(table, 'width');
+  Arr.each(TableLookup.cells(table), (cell) => Css.remove(cell, 'width'));
+};
+
+const isPercentSizing = Sizes.isPercentSizing;
+const isPixelSizing = Sizes.isPixelSizing;
+const isNoneSizing = Sizes.isNoneSizing;
+
+const getPercentTableWidth = Sizes.getPercentTableWidth;
+const getPercentTableHeight = Sizes.getPercentTableHeight;
+
 export {
+  convertToPercentageSizing,
+  convertToPixelSizing,
+  convertToNoneSizing,
+  getPercentTableWidth,
+  getPercentTableHeight,
+  isPercentSizing,
+  isPixelSizing,
+  isNoneSizing,
   redistribute
 };

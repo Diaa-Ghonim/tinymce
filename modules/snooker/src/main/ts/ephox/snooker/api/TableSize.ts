@@ -1,5 +1,5 @@
 import { HTMLTableCellElement, HTMLTableElement } from '@ephox/dom-globals';
-import { Arr, Fun } from '@ephox/katamari';
+import { Fun } from '@ephox/katamari';
 import { Element, Width } from '@ephox/sugar';
 import { Warehouse } from '../model/Warehouse';
 import { BarPositions, ColInfo } from '../resize/BarPositions';
@@ -15,7 +15,7 @@ export interface TableSize {
   readonly singleColumnWidth: (w: number, delta: number) => number[];
   readonly minCellWidth: () => number;
   readonly setElementWidth: (cell: Element<HTMLTableCellElement>, amount: number) => void;
-  readonly setTableWidth: (table: Element<HTMLTableElement>, newWidths: number[], delta: number) => void;
+  readonly setTableWidth: (table: Element<HTMLTableElement>, delta: number) => void;
   readonly label: string;
 }
 
@@ -46,7 +46,7 @@ const percentageSize = (width: string, element: Element<HTMLTableElement>): Tabl
   const singleColumnWidth = (w: number, _delta: number) => [ 100 - w ];
   // Get the width of a 10 pixel wide cell over the width of the table as a percentage
   const minCellWidth = () => CellUtils.minWidth() / pixelWidth * 100;
-  const setTableWidth = (table: Element, _newWidths: number[], delta: number) => {
+  const setTableWidth = (table: Element, delta: number) => {
     const ratio = delta / 100;
     const change = ratio * floatWidth;
     Sizes.setPercentageWidth(table, floatWidth + change);
@@ -70,9 +70,8 @@ const pixelSize = (width: number): TableSize => {
     const newNext = Math.max(CellUtils.minWidth(), w + delta);
     return [ newNext - w ];
   };
-  const setTableWidth = (table: Element, newWidths: number[], _delta: number) => {
-    const total = Arr.foldr(newWidths, (b, a) => b + a, 0);
-    Sizes.setPixelWidth(table, total);
+  const setTableWidth = (table: Element, delta: number) => {
+    Sizes.setPixelWidth(table, width + delta);
   };
   return {
     width: Fun.constant(width),

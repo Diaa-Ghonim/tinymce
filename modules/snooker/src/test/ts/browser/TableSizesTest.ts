@@ -95,12 +95,23 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
     return table;
   };
 
+  const reducePrecision = (value: string, precision: number = 1) => {
+    const floatValue = parseFloat(value);
+    if (!floatValue) {
+      return value;
+    } else {
+      const unit = /^\d+(\.\d+)?(px|%)$/.exec(value)![2];
+      const p = Math.pow(10, precision);
+      return (Math.round(floatValue * p ) / p) + unit;
+    }
+  };
+
   const readWidth = function (element: Element) {
     const rows = SelectorFilter.descendants(element, 'tr');
     return Arr.map(rows, function (row) {
       const cells = SelectorFilter.descendants(row, 'td,th');
       return Arr.map(cells, function (cell) {
-        return Css.getRaw(cell, 'width').getOrDie('Did not contain width information.');
+        return Css.getRaw(cell, 'width').map(reducePrecision).getOrDie('Did not contain width information.');
       });
     });
   };
@@ -110,7 +121,7 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
     return Arr.map(rows, function (row) {
       const cells = SelectorFilter.descendants(row, 'td,th');
       return Arr.map(cells, function (cell) {
-        return Css.getRaw(cell, 'height').getOrDie('Did not contain height information.');
+        return Css.getRaw(cell, 'height').map(reducePrecision).getOrDie('Did not contain height information.');
       });
     });
   };
@@ -178,15 +189,15 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
   ], Element.fromHtml(pixelTableHeight), '150px');
 
   checkHeight([
-    [ '46%', '13%', '13%', '46%' ],
-    [ '84%', '33%', '33%' ],
-    [ '51%', '51%', '51%', '51%' ]
+    [ '46.7%', '13.3%', '13.3%', '46.7%' ],
+    [ '83.3%', '33.3%', '33.3%' ],
+    [ '50%', '50%', '50%', '50%' ]
   ], Element.fromHtml(pixelTableHeight), '100%');
 
   checkHeight([
-    [ '46%', '13%', '13%', '46%' ],
-    [ '84%', '33%', '33%' ],
-    [ '51%', '51%', '51%', '51%' ]
+    [ '46.7%', '13.3%', '13.3%', '46.7%' ],
+    [ '83.3%', '33.3%', '33.3%' ],
+    [ '50%', '50%', '50%', '50%' ]
   ], Element.fromHtml(pixelTableHeight), '150%');
 
   checkWidth([

@@ -47,7 +47,7 @@ UnitTest.test('TableSize.pixelSizing', () => {
     Assert.eq('Single column delta width should be the delta', [ delta ], sizing.singleColumnWidth(colWidth, delta));
   }));
 
-  sizing.setTableWidth(table, [ 100, 100 ], -200);
+  sizing.setTableWidth(table, -200);
   Assert.eq('Table width after resizing is 200px', Option.some('200px'), Css.getRaw(table, 'width'), tOption());
 
   const cell = SelectorFind.descendant<HTMLTableCellElement>(table, 'td').getOrDie();
@@ -77,7 +77,7 @@ UnitTest.test('TableSize.percentageSizing', () => {
     Assert.eq('Single column delta width should be 100% - percentage width', [ 100 - colWidth ], sizing.singleColumnWidth(colWidth, delta));
   }));
 
-  sizing.setTableWidth(table, [ 50, 50 ], -25);
+  sizing.setTableWidth(table, -25);
   Assert.eq('Table width after resizing is 25% less of the original 80%', Option.some('60%'), Css.getRaw(table, 'width'), tOption());
 
   const cell = SelectorFind.descendant<HTMLTableCellElement>(table, 'td').getOrDie();
@@ -94,7 +94,9 @@ UnitTest.test('TableSize.noneSizing', () => {
   const sizing = TableSize.getTableSize(table);
   const warehouse = Warehouse.fromTable(table);
   const width = Width.get(table);
-  const cellWidth = SelectorFind.descendant<HTMLTableCellElement>(table, 'td').map(Width.get).getOrDie();
+  const cellWidth = SelectorFind.descendant<HTMLTableCellElement>(table, 'td')
+    .map((cell) => parseInt(Css.get(cell, 'width'), 10))
+    .getOrDie();
 
   Assert.eq('Width should be the computed size of the table', width, sizing.width());
   Assert.eq('Pixel width should be the computed size of the table', width, sizing.pixelWidth());
@@ -106,7 +108,7 @@ UnitTest.test('TableSize.noneSizing', () => {
     Assert.eq('Single column delta width should be 0', [ 0 ], sizing.singleColumnWidth(colWidth, delta));
   }));
 
-  sizing.setTableWidth(table, [ cellWidth - 10, cellWidth - 10 ], -20);
+  sizing.setTableWidth(table, -20);
   Assert.eq('Table width after resizing is unchanged', Option.none<string>(), Css.getRaw(table, 'width'), tOption());
 
   const cell = SelectorFind.descendant<HTMLTableCellElement>(table, 'td').getOrDie();

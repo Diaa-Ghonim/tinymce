@@ -1,8 +1,9 @@
 import {
   ApproxStructure, Assertions, Chain, Cursors, GeneralSteps, Guard, Logger, Mouse, NamedChain, Step, UiControls, UiFinder, Waiter
 } from '@ephox/agar';
-import { document, HTMLElement } from '@ephox/dom-globals';
-import { Obj } from '@ephox/katamari';
+import { Assert } from '@ephox/bedrock-client';
+import { document, HTMLElement, HTMLTableCellElement, HTMLTableRowElement } from '@ephox/dom-globals';
+import { Arr, Obj } from '@ephox/katamari';
 import { TinyDom, TinyUi } from '@ephox/mcagar';
 import { Attr, Body, Element, Html, SelectorFilter, SelectorFind, Value } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
@@ -15,6 +16,18 @@ const getRawWidth = (editor: Editor, elm: HTMLElement) => {
     const attr = editor.dom.getAttrib(elm, 'width');
     return attr ? attr + 'px' : attr;
   }
+};
+
+const getWidths = (editor: Editor, elm: HTMLElement) => {
+  const rawWidth = getRawWidth(editor, elm);
+  const pxWidth = editor.dom.getStyle(elm, 'width', true);
+  const unit = rawWidth === '' ? null : /\d+(\.\d+)?(%|px)/.exec(rawWidth)[2];
+  return {
+    raw: rawWidth === '' ? null : parseFloat(rawWidth),
+    px: parseInt(pxWidth, 10),
+    unit,
+    isPercent: unit === '%'
+  };
 };
 
 const sAssertTableStructure = (editor, structure) => Logger.t('Assert table structure ' + structure, Step.sync(() => {
@@ -215,15 +228,7 @@ const cGetWidth = Chain.control(
   Chain.mapper(function (input: any) {
     const editor = input.editor;
     const elm = input.element.dom();
-    const rawWidth = getRawWidth(editor, elm);
-    const pxWidth = editor.dom.getStyle(elm, 'width', true);
-    const unit = rawWidth === '' ? null : /\d+(\.\d+)?(%|px)/.exec(rawWidth)[2];
-    return {
-      raw: rawWidth === '' ? null : parseFloat(rawWidth),
-      px: parseInt(pxWidth, 10),
-      unit,
-      isPercent: unit === '%'
-    };
+    return getWidths(editor, elm);
   }),
   Guard.addLogging('Get table width')
 );
@@ -232,15 +237,9 @@ const cGetCellWidth = (rowNumber: number, columnNumber: number) => Chain.control
   Chain.mapper((input: any) => {
     const editor = input.editor;
     const elm = input.element;
-    const row = SelectorFilter.descendants(elm, 'tr')[rowNumber];
-    const cell = SelectorFilter.descendants(row, 'th,td')[columnNumber];
-    const rawWidth = editor.dom.getStyle(cell.dom(), 'width');
-    const pxWidth = editor.dom.getStyle(cell.dom(), 'width', true);
-    return {
-      raw: rawWidth === '' ? null : parseFloat(rawWidth),
-      px: parseInt(pxWidth, 10),
-      isPercent: /%$/.test(rawWidth)
-    };
+    const row = SelectorFilter.descendants<HTMLTableRowElement>(elm, 'tr')[rowNumber];
+    const cell = SelectorFilter.descendants<HTMLTableCellElement>(row, 'th,td')[columnNumber];
+    return getWidths(editor, cell.dom());
   }),
   Guard.addLogging('Get cell width')
 );
@@ -342,12 +341,49 @@ const sAssertDialogValues = (data, hasAdvanced, generalSelectors) => {
   return sAssertTabContents(data, generalSelectors);
 };
 
+const sAssertTableStructureWithSizes = (editor: Editor, cols: number, rows: number, tableWidth: string, widths: number[][], options: { headerRows: number; headerCols: number } = { headerRows: 0, headerCols: 0 }) => GeneralSteps.sequence([
+  sAssertTableStructure(editor, ApproxStructure.build((s, str) => s.element('table', {
+    attrs: {
+      border: str.is('1')
+    },
+    styles: {
+      'border-collapse': str.is('collapse'),
+      'width': str.is(tableWidth)
+    },
+    children: [
+      s.element('tbody', {
+        children: Arr.range(rows, (rowIndex) => s.element('tr', {
+          children: Arr.range(cols, (colIndex) => s.element(colIndex < options.headerCols || rowIndex < options.headerRows ? 'th' : 'td', {
+            children: [
+              s.element('br', { })
+            ]
+          }))
+        }))
+      })
+    ]
+  }))),
+  Chain.asStep({}, [
+    Chain.mapper(() => editor.dom.select('table')[0]),
+    Chain.op((table) => {
+      Arr.each(widths, (rowWidths, rowIndex) => {
+        const row = editor.dom.select('tr', table)[rowIndex];
+        Arr.each(rowWidths, (cellWidth, cellIndex) => {
+          const cell = editor.dom.select('td,th', row)[cellIndex];
+          const cellSize = getWidths(editor, cell);
+          Assert.eq(`Cell size is ${cellWidth}`, true, Math.abs(cellSize.raw - cellWidth) <= 2);
+        });
+      });
+    })
+  ])
+]);
+
 export {
   sAssertDialogPresence,
   sAssertSelectValue,
   sChooseTab,
   sOpenToolbarOn,
   sAssertTableStructure,
+  sAssertTableStructureWithSizes,
   sOpenTableDialog,
   sGotoGeneralTab,
   sGotoAdvancedTab,
