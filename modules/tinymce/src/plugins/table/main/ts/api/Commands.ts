@@ -12,8 +12,8 @@ import { Element, Insert, Remove, Replication } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
 import { insertTableWithDataValidation } from '../actions/InsertTable';
 import { AdvancedPasteTableAction, CombinedTargetsTableAction, TableActions } from '../actions/TableActions';
-import * as Util from '../alien/Util';
 import { Clipboard } from '../core/Clipboard';
+import * as Util from '../core/Util';
 import * as TableTargets from '../queries/TableTargets';
 import { CellSelectionApi } from '../selection/CellSelection';
 import { Selections } from '../selection/Selections';
@@ -78,7 +78,7 @@ const registerCommands = (editor: Editor, actions: TableActions, cellSelection: 
       TableSelection.getSelectionStartCell(editor).each((cell) =>
         getTableFromCell(cell).each((table) => {
           const generators = TableFill.paste(Element.fromDom(editor.getDoc()));
-          const targets = TableTargets.pasteRows(selections, table, cell, clonedRows, generators);
+          const targets = TableTargets.pasteRows(selections, cell, clonedRows, generators);
           execute(table, targets).each((rng) => {
             editor.selection.setRng(rng);
             editor.focus();

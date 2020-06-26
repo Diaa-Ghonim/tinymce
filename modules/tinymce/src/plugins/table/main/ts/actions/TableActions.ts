@@ -11,13 +11,13 @@ import { DomDescent } from '@ephox/phoenix';
 import { CellMutations, ResizeWire, RunOperation, TableDirection, TableFill, TableGridSize, TableOperations } from '@ephox/snooker';
 import { Element, Node } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
-import * as Util from '../alien/Util';
 import { fireNewCell, fireNewRow } from '../api/Events';
 import { getCloneElements } from '../api/Settings';
 import { getRowType, switchCellType, switchSectionType } from '../core/TableSections';
+import * as Util from '../core/Util';
 import * as Direction from '../queries/Direction';
+import * as TableSize from '../queries/TableSize';
 import { getCellsFromSelection, getRowsFromSelection } from '../selection/TableSelection';
-
 
 type TableAction<T> = (table: Element<HTMLTableElement>, target: T) => Option<Range>;
 export type SimpleTableAction = (editor: Editor, args: Record<string, any>) => void;
@@ -67,7 +67,8 @@ export const TableActions = (editor: Editor, lazyWire: () => ResizeWire): TableA
       const doc = Element.fromDom(editor.getDoc());
       const direction = TableDirection(Direction.directionAt);
       const generators = TableFill.cellOperations(mutate, doc, cloneFormats);
-      return guard(table) ? operation(wire, table, target, generators, direction).bind((result) => {
+      const sizing = TableSize.get(editor, table);
+      return guard(table) ? operation(wire, table, target, generators, direction, sizing).bind((result) => {
         Arr.each(result.newRows(), (row) => {
           fireNewRow(editor, row.dom());
         });
